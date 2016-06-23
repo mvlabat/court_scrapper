@@ -1,0 +1,18 @@
+{
+  "name": "court_scrapper",
+  "version": "1.0.0",
+  "description": "",
+  "main": "getlinks.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "cheerio": "^0.20.0",
+    "exceljs": "^0.2.8",
+    "iconv": "^2.2.1",
+    "kue": "^0.11.1",
+    "request": "^2.72.0"
+  }
+}
