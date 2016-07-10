@@ -9,6 +9,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "casperjs": "^1.1.2",
     "cheerio": "^0.20.0",
     "exceljs": "^0.2.8",
     "iconv": "^2.2.1",
