@@ -1,16 +1,17 @@
-var request = require('request');
-var fs = require('fs');
+const request = require('request');
+const fs = require('fs');
 
-var kue = require('kue'),
+const kue = require('kue'),
   queue = kue.createQueue();
 
 // Init post parameters.
 var court_type = 5;
+const last_court_type = 8;
 var reg_id = 1;
 // Init concurrency parameters.
 const WORKERS = 10;
 var last_failed_count = 0;
-var links_stream = fs.createWriteStream('links.txt');
+var links = {};
 
 // Job processor.
 queue.process('links', WORKERS, function(job, done) {
@@ -24,7 +25,7 @@ queue.process('links', WORKERS, function(job, done) {
     console.log(response.statusCode);
     if (response.statusCode == 302 && response.headers.location.length > 0) {
       console.log(response.statusCode + ': ' + response.headers.location);
-      links_stream.write(response.headers.location + '\n');
+      links[job.data.court_type][job.data.reg_id] = response.headers.location;
       done(null, job.data.court_type);
     }
     else {
@@ -35,9 +36,7 @@ queue.process('links', WORKERS, function(job, done) {
 });
 
 function create_job() {
-  var job = queue.create('links', { court_type: court_type, reg_id: reg_id }).save(function(err) {
-    //if( !err ) console.log( job.id );
-  });
+  var job = queue.create('links', { court_type: court_type, reg_id: reg_id });
 
   job.on('complete', function(result) {
 
@@ -56,29 +55,30 @@ function create_job() {
       create_job();
     }
     else {
-      if (court_type < 8) {
+      if (court_type < last_court_type) {
         // Proceed to the next court type.
         last_failed_count = 0;
         court_type++;
         reg_id = 1;
-        links_stream.write(court_type + '\n');
         create_job();
       }
       else if (last_failed_count == WORKERS) {
-        // All the courts are processed, end file stream and exit.
-        links_stream.end();
+        // All the courts are processed, write links and exit.
+        fs.writeFileSync("links.json", JSON.stringify(links, null, 4));
         process.exit();
       }
     }
 
-  });
+  }).removeOnComplete(true).save();
 
   // Increment reg_id for the next created job.
   reg_id++;
 }
 
 // Initialize initial jobs.
-links_stream.write(court_type + '\n');
+for (var i = court_type; i <= last_court_type; ++i) {
+  links[i] = {};
+}
 for (var i = 0; i < WORKERS; ++i) {
   create_job();
 }
